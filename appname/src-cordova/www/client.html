@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- Required meta tags-->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <!-- Color theme for statusbar -->
+    <meta name="theme-color" content="#2196f3">
+    <!-- Your app title -->
+    <title></title>
+    <!-- Path to Framework7 Library CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/framework7@2.2.1/dist/css/framework7.css">
+    <!-- Path to Framework7 Library CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/framework7-icons@0.9.1/css/framework7-icons.css">
+    <!-- Path to your custom app styles-->
+    <style>
+        html {
+            font-size: 11px;
+        }
+        #chat_logo {
+            position: fixed;
+            right: 0;
+            bottom: 180px;
+            width: 82px;
+            height: 100px;
+            font-size: 1.6rem;
+            text-align: right;
+            background: url(/static/images/go_left.svg) -3px 40px no-repeat #d7e0e6;
+            border-radius: 3px;
+            cursor: default;
+            padding-right: 4px;
+        }
+        #chat {
+            position: fixed;
+            right: -365px;
+            bottom: 20px;
+            width: 360px;
+            height: 410px;
+            font-size: 1.5rem;
+            text-align: right;
+            background-color: #d7e0e6;
+            border-radius: 4px;
+            cursor: default;
+            z-index: 100;
+        }
+    </style>
+</head>
+<div class="row"
+><div class="card" style="width: 18rem;">
+        <img src="{{user.image.url}}" class="card-img-top" alt="...">
+        <div class="card-body">
+          <p class="card-text">{{user.username}}</p>
+          <hr>
+          <p class="card-text">{{user.birth_date}}</p>
+          <hr>
+          <p class="card-text">{{user.email}}</p>
+
+        </div>
+      </div>      </div>
+
+<body style="background:#F2F2F2;">
+    {% verbatim %}
+    <div id="app">
+        <div id="chat_logo">
+            Mesaj gonder
+        </div>
+        <div id="chat">
+            <f7-page>
+                <f7-navbar title="Online"></f7-navbar>
+
+                <!-- Messages -->
+                <f7-messages ref="messages">
+                    <f7-messages-title>
+                        {{ new Date().toLocaleTimeString() }}</f7-messages-title>
+                    <f7-message v-for="(message, index) in messagesData" :key="index" :type="message.type" :text="message.message" :image="message.image"
+                        :name="message.name" :avatar="message.avatar" :first="isFirstMessage(message, index)" :last="isLastMessage(message, index)"
+                        :tail="isTailMessage(message, index)"></f7-message>
+                </f7-messages>
+
+                <!-- Messagebar -->
+                <f7-messagebar placeholder="Send message" ref="messagebar">
+                    <!-- Send message link -->
+                    <f7-link icon-if-ios="f7:arrow_up_fill" icon-if-md="material:send" slot="inner-end" @click="sendMessage"></f7-link>
+                </f7-messagebar>
+            </f7-page>
+
+        </div>
+
+    </div>
+    {% endverbatim %}
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.js"></script>
+    <!-- Path to Framework7 Library JS-->
+    <script src="https://cdn.jsdelivr.net/npm/framework7@2.2.1/dist/js/framework7.js"></script>
+    <!-- Path to Vue js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js"></script>
+    <!-- Path to Framework7 Vue Plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/framework7-vue@2.2.1/dist/framework7-vue.js"></script>
+    <!-- Path to axios-->
+    <script src="https://cdn.jsdelivr.net/npm/axios@0.18.0/dist/axios.js"></script>
+    <!-- Path to your app js where you init your app-->
+    <script>
+        Vue.use(Framework7Vue, Framework7)
+        var $$ = Dom7;
+        var vm = new Vue({
+            el: '#app',
+            framework7: {
+                root: '#app',
+                // App id
+                id: 'django-vue-chat',
+                // App Name
+                name: 'DjangoVueChat',
+                // Array with app routes
+                theme: 'auto',
+            },
+            data: {
+                baseUrl: '',
+                messagesData: [],
+                id: '',
+                name: '',
+                avatar: '',
+            },
+            mounted: function () {
+                this.baseUrl = window.location.protocol + '//' + window.location.host + '/';
+            },
+            methods: {
+                isFirstMessage: function (message, index) {
+                    const self = this;
+                    const previousMessage = self.messagesData[index - 1];
+                    if (message.isTitle) return false;
+                    if (!previousMessage || previousMessage.type !== message.type || previousMessage.name !==
+                        message.name) return true;
+                    return false;
+                },
+                isLastMessage: function (message, index) {
+                    const self = this;
+                    const nextMessage = self.messagesData[index + 1];
+                    if (message.isTitle) return false;
+                    if (!nextMessage || nextMessage.type !== message.type || nextMessage.name !== message.name)
+                        return true;
+                    return false;
+                },
+                isTailMessage: function (message, index) {
+                    const self = this;
+                    const nextMessage = self.messagesData[index + 1];
+                    if (message.isTitle) return false;
+                    if (!nextMessage || nextMessage.type !== message.type || nextMessage.name !== message.name)
+                        return true;
+                    return false;
+                },
+                sendMessage: function () {
+                    const self = this;
+                    const message = self.messagebar.getValue().replace(/\n/g, '<br>').trim();
+                    if (message.length === 0) {
+                        // exit when empty messagebar text is empty
+                        return;
+                    }
+                    // Clear messagebar area
+                    self.messagebar.clear();
+                    // Focus area
+                    if (message.length) self.messagebar.focus();
+                    // Add sent message
+                    let time = new Date(); 
+                    console.log('in sendMessage:' + time);
+                    self.messagesData.push({
+                        id: self.id,
+                        type: 'sent',
+                        time: time.toString(),
+                        name: '{{user}}',
+                        avatar: '/static/images/client.png',
+                        message: message
+                    });
+                    self.socket.send(JSON.stringify({
+                        'id': self.id,
+                        'type': 'client_message',
+                        'time': time.toString(),
+                        'name': '{{user}}',
+                        'avatar': '/static/images/client.png',
+                        'message': message
+                    }));
+                },
+                onF7Ready: function () {
+                    const self = this;
+                    // References to us APIs
+                    self.messagebar = self.$refs.messagebar.f7Messagebar;
+                    self.messages = self.$refs.messages.f7Messages;
+                    $$("#chat_logo").on("click", function () {
+                        if ($$(this).css('right') == '366px') {
+                            $$(this).animate({
+                                right: '0px'
+                            });
+                            $$(this).next().animate({
+                                right: '-365px'
+                            });
+                            $$(this).css('backgroundImage', 'url(images/go_left.svg)');
+                        } else {
+                            $$(this).animate({
+                                right: '366px'
+                            });
+                            $$(this).next().animate({
+                                right: '5px'
+                            });
+                            $$(this).css('backgroundImage', 'url(/static/images/go_right.svg)');
+                        }
+                    });
+                    let ws_protocol = 'ws://';
+                    let connection_string = '';
+                    let id = String(new Date().getTime()) + Math.floor(Math.random() * 10);
+                    self.id = id;
+                    connection_string = ws_protocol + window.location.host + '/ws/client/1/';
+                    console.log('connection string:' + connection_string)
+                    self.socket = new WebSocket(connection_string);
+                    self.socket.onopen = function () {
+                        console.log("opening a connection...");
+                    };
+                    self.socket.onerror = function (evt) {
+                        console.log("ERR: " + evt.data);
+                    };
+                    self.socket.onclose = function (e) {
+                        console.log('Chat socket closed unexpectedly');
+                    };
+                    self.socket.onmessage = function (e) {
+                        let data = JSON.parse(e.data);
+                        let id = data['id'];
+                        let type = data['type'];
+                        let time = new Date(data['time']);
+                        let message = data['message'];
+                        let name = data['name'];
+                        let avatar = data['avatar'];
+                        switch (type) {
+                            case 'isOnline':
+                                if (message == false) {
+                                    console.log('');
+                                    self.messagebar.disabled = true;
+                                }
+                                break;
+                            case 'client_message':
+                                console.log('client_message');
+                                break;
+                            case 'service_message':
+                                
+                                self.messagesData.push({
+                                    id: id,
+                                    type: 'received',
+                                    time: time.toString(),
+                                    message: message,
+                                    name: name,
+                                    avatar: avatar,
+                                });
+                                break;
+                        }
+                    };
+                },
+                buildUrl: function (url) {
+                    return this.baseUrl + url;
+                }
+            },
+        })
+    </script>
+</body>
+
+</html>
